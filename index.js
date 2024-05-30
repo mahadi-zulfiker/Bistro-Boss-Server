@@ -207,8 +207,8 @@ async function run() {
 
         app.get('/payments/:email', verifyToken, async (req, res) => {
             const query = { email: req.params.email }
-            if(req.params.email !== req.decoded.email){
-                return res.status(403).send({message: 'forbidden access'});
+            if (req.params.email !== req.decoded.email) {
+                return res.status(403).send({ message: 'forbidden access' });
             }
             const result = await paymentCollection.find(query).toArray();
             res.send(result);
@@ -229,6 +229,37 @@ async function run() {
             const deleteResult = await cartCollection.deleteMany(query);
 
             res.send({ paymentResult, deleteResult });
+        })
+
+        // stats 
+        app.get('/admin-stats', verifyToken, verifyAdmin,  async (req, res) => {
+            const users = await userCollection.estimatedDocumentCount();
+            const menuItems = await menuCollection.estimatedDocumentCount();
+            const orders = await paymentCollection.estimatedDocumentCount();
+
+            //this is not the best way
+            // const payments = await paymentCollection.find().toArray();
+            // const revenue = payments.reduce((total, payment) => total + payment.price ,0);
+
+            const result = await paymentCollection.aggregate([
+                {
+                    $group: {
+                        _id: null,
+                        totalRevenue: {
+                            $sum: '$price'
+                        }
+                    }
+                }
+            ]).toArray();
+
+            const revenue = result.length > 0 ? result[0].totalRevenue  : 0;
+
+            res.send({
+                users,
+                menuItems,
+                orders,
+                revenue
+            })
         })
 
         // Send a ping to confirm a successful connection
