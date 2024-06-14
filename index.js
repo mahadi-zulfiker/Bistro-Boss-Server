@@ -8,7 +8,18 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 const port = process.env.PORT || 5000;
 
 //middleware
-app.use(cors());
+
+const corsOptions = {
+    origin: [
+        'http://localhost:5173',
+        'https://bistro-boss-6c6d1.web.app',
+        'https://bistro-boss-6c6d1.firebaseapp.com'
+    ],
+    credentials: true,
+    optionSuccessStatus: 200,
+}
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 
@@ -27,7 +38,7 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+        // await client.connect();
 
         const menuCollection = client.db("BistroDB").collection("menu");
         const reviewCollection = client.db("BistroDB").collection("reviews");
@@ -77,7 +88,7 @@ async function run() {
             const result = await userCollection.find().toArray();
             res.send(result);
         });
-
+        
         app.get('/users/admin/:email', verifyToken, async (req, res) => {
             const email = req.params.email;
             if (email !== req.decoded.email) {
@@ -263,7 +274,7 @@ async function run() {
         })
 
         // using aggregate pipeline
-        app.get('/order-stats', verifyToken, verifyAdmin,  async (req, res) => {
+        app.get('/order-stats', verifyToken, verifyAdmin, async (req, res) => {
             const result = await paymentCollection.aggregate([
                 {
                     $unwind: '$menuItemIds'
@@ -299,8 +310,8 @@ async function run() {
         })
 
         // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+        // await client.db("admin").command({ ping: 1 });
+        // console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
         //await client.close();
