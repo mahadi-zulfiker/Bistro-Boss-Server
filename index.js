@@ -5,6 +5,15 @@ const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
+const formData = require('form-data');
+const Mailgun = require('mailgun.js');
+const mailgun = new Mailgun(formData);
+
+const mg = mailgun.client({
+    username: 'api',
+    key: process.env.MAIL_GUN_API_KEY,
+});
+
 const port = process.env.PORT || 5000;
 
 //middleware
@@ -88,7 +97,7 @@ async function run() {
             const result = await userCollection.find().toArray();
             res.send(result);
         });
-        
+
         app.get('/users/admin/:email', verifyToken, async (req, res) => {
             const email = req.params.email;
             if (email !== req.decoded.email) {
@@ -238,6 +247,24 @@ async function run() {
             };
 
             const deleteResult = await cartCollection.deleteMany(query);
+
+            //send user email about payment confirmation
+            mg.messages
+                .create(process.env.MAIL_SENDING_DOMAIN, {
+                    from: "Mailgun Sandbox <postmaster@sandbox8395a3192bd241bdb82778bfefb85ab8.mailgun.org>",
+                    to: ["adib.mahade45@gmail.com"],
+                    subject: "Order Confirmation",
+                    text: "Test email",
+                    html: `
+                        <div>
+                            <h2>Thank You for your order</h2>
+                            <h4>Your Transaction Id: <strong>${payment.transactionId}</strong></h4>
+                            <p>We would like to get your feedback about the food</p>
+                        </div>
+                    `
+                })
+                .then(msg => console.log(msg))
+                .catch(err => console.log(err));
 
             res.send({ paymentResult, deleteResult });
         })
