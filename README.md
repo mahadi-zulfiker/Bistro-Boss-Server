@@ -10,6 +10,10 @@ Features:
 - users can pay with stripe
 - admin can control everything going on the website.
 
+Technologies:
+- node.js
+- mongodb
+
 Tips to run the website locally:
 - download zip or use git clone - *link*
 - npm i [to install all the dependencies.]
